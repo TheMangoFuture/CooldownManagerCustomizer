@@ -3,7 +3,7 @@
 --------------------------------------------------------------------------------
 local addonName, addonTable = ...
 if not addonTable then
-    DEFAULT_CHAT_FRAME:AddMessage("|cffff0000ERROR:|r CooldownManagerCustomizer - addonTable not received from loader!", 1.0, 0.1, 0.1)
+    DEFAULT_CHAT_FRAME:AddMessage(addonTable.L["ERROR_ADDON_TABLE_NOT_RECEIVED"], 1.0, 0.1, 0.1)
     return
 end
 
@@ -31,7 +31,7 @@ local function HookedGetCooldownViewerCategorySet(category)
         table.insert(potentialCooldownIDs, result)
     end
 
-    --sorting the table to improve efficiency
+    -- sorting the table to improve efficiency
     table.sort(potentialCooldownIDs)
 
     if not db or not db.hiddenSpells or next(db.hiddenSpells) == nil then
@@ -76,7 +76,7 @@ function addonTable:PopulateOptionsIfReady()
         optionsPopulated = true
         addonTable:PopulateOptions()
     else
-        print(addonName .. ": Error - PopulateOptions function (expected in Options.lua) not found!")
+        print(string.format(addonTable.L["ERROR_POPULATE_OPTIONS_NOT_FOUND"], addonName))
     end
 end
 
@@ -112,11 +112,11 @@ end)
 -------------------
 local function AddSpellIDToTooltip(tooltip, data)
     local spellName, spellID = tooltip:GetSpell()
-        if spellID then
-            tooltip:AddLine(" ")
-            tooltip:AddLine("Spell ID: " .. tostring(spellID), 1, 1, 1)
-        end
+    if spellID then
+        tooltip:AddLine(" ")
+        tooltip:AddLine(addonTable.L["SPELL_ID_TOOLTIP"] .. tostring(spellID), 1, 1, 1)
     end
+end
 TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Spell, AddSpellIDToTooltip)
 
 --------------------------------------------------------------------------------
@@ -126,12 +126,12 @@ SLASH_COOLDOWNMANAGERFILTER1 = "/cmc"
 SlashCmdList["COOLDOWNMANAGERFILTER"] = function(msg)
     local AddonGlobalTable = _G[addonName]
     if not AddonGlobalTable or not AddonGlobalTable.RefreshCooldownViewers then
-         print(addonName .. ": Error - Addon not fully ready.")
-         return
+        print(string.format(addonTable.L["ERROR_ADDON_NOT_READY"], addonName))
+        return
     end
     if not db then
-         print(addonName .. ": Error - Database not ready.")
-         return
+        print(string.format(addonTable.L["ERROR_DATABASE_NOT_READY"], addonName))
+        return
     end
 
     msg = msg and strtrim(msg) or ""
@@ -144,47 +144,47 @@ SlashCmdList["COOLDOWNMANAGERFILTER"] = function(msg)
     local spellID = tonumber(arg)
 
     if cmd == "config" or cmd == "cfg" then
-            AddonGlobalTable:ToggleConfigUI()
-            needsRefresh = false -- cfg or config won't need a full UI reload to work
+        AddonGlobalTable:ToggleConfigUI()
+        needsRefresh = false -- cfg or config won't need a full UI reload to work
     elseif cmd == "hide" then
         if spellID then
             if db.hiddenSpells[spellID] then
-                print(addonName .. ": SpellID", spellID, "is already hidden.")
+                print(string.format(addonTable.L["SPELL_ALREADY_HIDDEN"], addonName, spellID))
             else
                 db.hiddenSpells[spellID] = true
-                print(addonName .. ": Hiding SpellID", spellID)
+                print(string.format(addonTable.L["HIDING_SPELL"], addonName, spellID))
                 needsRefresh = true
             end
         else
-            print(addonName .. ": Usage: /cmc hide <SpellID>")
+            print(string.format(addonTable.L["USAGE_HIDE"], addonName))
         end
     elseif cmd == "show" then
         if spellID then
             if not db.hiddenSpells[spellID] then
-                 print(addonName .. ": SpellID", spellID, "is already shown (or was never hidden).")
+                print(string.format(addonTable.L["SPELL_ALREADY_SHOWN"], addonName, spellID))
             else
                 db.hiddenSpells[spellID] = nil -- nil removes from saved list
-                print(addonName .. ": Showing SpellID", spellID)
+                print(string.format(addonTable.L["SHOWING_SPELL"], addonName, spellID))
                 needsRefresh = true
             end
         else
-            print(addonName .. ": Usage: /cmc show <SpellID>")
+            print(string.format(addonTable.L["USAGE_SHOW"], addonName))
         end
     elseif cmd == "toggle" then
-         if spellID then
-             if db.hiddenSpells[spellID] then
-                 db.hiddenSpells[spellID] = nil
-                 print(addonName .. ": Toggling SpellID", spellID, "to SHOWN")
-             else
-                 db.hiddenSpells[spellID] = true
-                 print(addonName .. ": Toggling SpellID", spellID, "to HIDDEN")
-             end
-             needsRefresh = true
-         else
-             print(addonName .. ": Usage: /cmc toggle <SpellID>")
-         end
+        if spellID then
+            if db.hiddenSpells[spellID] then
+                db.hiddenSpells[spellID] = nil
+                print(string.format(addonTable.L["TOGGLING_SPELL_SHOWN"], addonName, spellID))
+            else
+                db.hiddenSpells[spellID] = true
+                print(string.format(addonTable.L["TOGGLING_SPELL_HIDDEN"], addonName, spellID))
+            end
+            needsRefresh = true
+        else
+            print(string.format(addonTable.L["USAGE_TOGGLE"], addonName))
+        end
     elseif cmd == "list" then
-        print(addonName .. ": Currently Hidden Spell IDs:")
+        print(string.format(addonTable.L["LIST_HIDDEN_SPELLS"], addonName))
         local found = false
         for id, hidden in pairs(db.hiddenSpells) do
             if hidden == true then
@@ -192,23 +192,23 @@ SlashCmdList["COOLDOWNMANAGERFILTER"] = function(msg)
                 found = true
             end
         end
-        if not found then print("(None)") end
+        if not found then print(addonTable.L["NO_HIDDEN_SPELLS"]) end
         needsRefresh = false
     elseif cmd == "refresh" then
-        print(addonName .. ": Manual refresh requested.")
+        print(string.format(addonTable.L["MANUAL_REFRESH"], addonName))
         needsRefresh = true
     elseif cmd == "" then 
         needsRefresh = false
-        print(addonName .. ": Commands:")
-        print("/cmc config - Opens the configuration window")
-        print("/cmc hide <SpellID> - Hides a spell")
-        print("/cmc show <SpellID> - Shows a spell")
-        print("/cmc toggle <SpellID> - Toggles hiding a spell")
-        print("/cmc list - Lists currently hidden SpellIDs")
-        print("/cmc refresh - Manually refreshes the CooldownViewer UI")
+        print(string.format(addonTable.L["COMMANDS_HEADER"], addonName))
+        print(addonTable.L["COMMAND_CONFIG"])
+        print(addonTable.L["COMMAND_HIDE"])
+        print(addonTable.L["COMMAND_SHOW"])
+        print(addonTable.L["COMMAND_TOGGLE"])
+        print(addonTable.L["COMMAND_LIST"])
+        print(addonTable.L["COMMAND_REFRESH"])
     else 
-         print(addonName .. ": Unknown command '" .. cmd .. "'. Type /cmc for help.")
-         needsRefresh = false
+        print(string.format(addonTable.L["UNKNOWN_COMMAND"], addonName, cmd))
+        needsRefresh = false
     end
 
     -- short delay for refresh execute in case of server tick rate issue
@@ -216,10 +216,10 @@ SlashCmdList["COOLDOWNMANAGERFILTER"] = function(msg)
         C_Timer.After(0.1, function()
             local CurrentAddonTable = _G[addonName]
             if CurrentAddonTable and CurrentAddonTable.RefreshCooldownViewers then
-                 CurrentAddonTable:RefreshCooldownViewers()
+                CurrentAddonTable:RefreshCooldownViewers()
             else
-                 -- if this happens the whole addon is super broke. should never see this.
-                 print(addonName .. ": Error - Addon table/refresh function not found in delayed timer.")
+                -- if this happens the whole addon is super broke. should never see this.
+                print(string.format(addonTable.L["ERROR_REFRESH_FUNCTION_NOT_FOUND"], addonName))
             end
         end)
     end
